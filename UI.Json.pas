@@ -10,6 +10,7 @@ type
   private
     procedure SetArrayItem(const index: Integer; const NewValue: TJSONValue);
   public
+    procedure Clear;
     property I[const index: Integer]: TJSONValue write SetArrayItem;
   end;
 
@@ -18,23 +19,29 @@ type
     function GetName: String;
     function GetCount: Integer;
   public
+    function AsArr: TJSONArray;
+    function AsObj: TJsonObject;
+    function AsBool: Boolean;
+    function AsFloat: Double;
+    function AsInt: Int64;
+    function AsStr: String;
     property Name: String read GetName;
     property Count: Integer read GetCount;
   end;
 
-  TJSONObjectHelper = class Helper for System.Json.TJSONObject
+  TJSONObjectHelper = class Helper for System.Json.TJsonObject
   private
     procedure SetBoolean(const Key: string; const Value: Boolean);
     procedure SetFloat(const Key: string; const Value: Double);
     procedure SetInt64(const Key: string; const Value: Int64);
     procedure SetString(const Key, Value: string);
-    procedure SetObject(const Key: string; const Value: TJSONObject);
+    procedure SetObject(const Key: string; const Value: TJsonObject);
     procedure SetArray(const Key: string; const Value: TJSONArray);
     procedure SetBooleanP(const Path: string; const Value: Boolean);
     procedure SetFloatP(const Path: string; const Value: Double);
     procedure SetInt64P(const Path: string; const Value: Int64);
     procedure SetStringP(const Path, Value: string);
-    procedure SetObjectP(const Path: string; const Value: TJSONObject);
+    procedure SetObjectP(const Path: string; const Value: TJsonObject);
     procedure SetArrayP(const Path: string; const Value: TJSONArray);
     function ForceP(const Path: string; out Name: String; out index: Integer): TJSONValue;
   public
@@ -58,27 +65,27 @@ type
     function GetStrP(const Path: string; const Default: string = ''): string;
 
     function AddArray(const Key: string): TJSONArray;
-    function AddObject(const Key: string): TJSONObject;
+    function AddObject(const Key: string): TJsonObject;
     function GetArray(const Key: string): TJSONArray;
-    function GetObject(const Key: string): TJSONObject;
+    function GetObject(const Key: string): TJsonObject;
 
     function AddArrayP(const Path: string): TJSONArray;
-    function AddObjectP(const Path: string): TJSONObject;
+    function AddObjectP(const Path: string): TJsonObject;
     function GetArrayP(const Path: string): TJSONArray;
-    function GetObjectP(const Path: string): TJSONObject;
+    function GetObjectP(const Path: string): TJsonObject;
 
     property Str[const Key: string]: string write SetString;
     property Int[const Key: string]: Int64 write SetInt64;
     property Float[const Key: string]: Double write SetFloat;
     property Bool[const Key: string]: Boolean write SetBoolean;
-    property Obj[const Key: string]: TJSONObject read GetObject write SetObject;
+    property Obj[const Key: string]: TJsonObject read GetObject write SetObject;
     property Arr[const Key: string]: TJSONArray read GetArray write SetArray;
 
     property StrP[const Path: string]: string write SetStringP;
     property IntP[const Path: string]: Int64 write SetInt64P;
     property FloatP[const Path: string]: Double write SetFloatP;
     property BoolP[const Path: string]: Boolean write SetBooleanP;
-    property ObjP[const Path: string]: TJSONObject read GetObjectP write SetObjectP;
+    property ObjP[const Path: string]: TJsonObject read GetObjectP write SetObjectP;
     property ArrP[const Path: string]: TJSONArray read GetArrayP write SetArrayP;
   end;
 
@@ -98,15 +105,15 @@ begin
   SetArrayP(Path, Result);
 end;
 
-function TJSONObjectHelper.AddObject(const Key: string): TJSONObject;
+function TJSONObjectHelper.AddObject(const Key: string): TJsonObject;
 begin
-  Result := TJSONObject.Create;
+  Result := TJsonObject.Create;
   AddPair(Key, Result);
 end;
 
-function TJSONObjectHelper.AddObjectP(const Path: string): TJSONObject;
+function TJSONObjectHelper.AddObjectP(const Path: string): TJsonObject;
 begin
-  Result := TJSONObject.Create;
+  Result := TJsonObject.Create;
   SetObjectP(Path, Result);
 end;
 
@@ -140,13 +147,13 @@ begin
     case LParser.NextToken of
       TJSONPathParser.TToken.Name:
         begin
-          if LCurrentValue.ClassType <> TJSONObject then
+          if LCurrentValue.ClassType <> TJsonObject then
           begin
-            LCurrentValue := TJSONObject.Create;
-            if Result.ClassType = TJSONObject then
+            LCurrentValue := TJsonObject.Create;
+            if Result.ClassType = TJsonObject then
             begin
-              TJSONObject(Result).RemovePair(Name);
-              TJSONObject(Result).AddPair(Name, LCurrentValue);
+              TJsonObject(Result).RemovePair(Name);
+              TJsonObject(Result).AddPair(Name, LCurrentValue);
             end
             else
             begin
@@ -155,11 +162,11 @@ begin
           end;
           Result := LCurrentValue;
           Name := LParser.TokenName;
-          LCurrentValue := TJSONObject(LCurrentValue).Values[LParser.TokenName];
+          LCurrentValue := TJsonObject(LCurrentValue).Values[LParser.TokenName];
           if LCurrentValue = nil then
           begin
             LCurrentValue := TJSONNull.Create;
-            TJSONObject(Result).AddPair(LParser.TokenName, LCurrentValue);
+            TJsonObject(Result).AddPair(LParser.TokenName, LCurrentValue);
           end;
         end;
       TJSONPathParser.TToken.ArrayIndex:
@@ -167,10 +174,10 @@ begin
           if LCurrentValue.ClassType <> TJSONArray then
           begin
             LCurrentValue := TJSONArray.Create;
-            if Result.ClassType = TJSONObject then
+            if Result.ClassType = TJsonObject then
             begin
-              TJSONObject(Result).RemovePair(Name);
-              TJSONObject(Result).AddPair(Name, LCurrentValue);
+              TJsonObject(Result).RemovePair(Name);
+              TJsonObject(Result).AddPair(Name, LCurrentValue);
             end
             else
             begin
@@ -215,24 +222,24 @@ begin
     Result := nil;
 end;
 
-function TJSONObjectHelper.GetObject(const Key: string): TJSONObject;
+function TJSONObjectHelper.GetObject(const Key: string): TJsonObject;
 var
   V: TJSONValue;
 begin
   V := GetValue(Key);
-  if Assigned(V) and (V is TJSONObject) then
-    Result := V as TJSONObject
+  if Assigned(V) and (V is TJsonObject) then
+    Result := V as TJsonObject
   else
     Result := nil;
 end;
 
-function TJSONObjectHelper.GetObjectP(const Path: string): TJSONObject;
+function TJSONObjectHelper.GetObjectP(const Path: string): TJsonObject;
 var
   V: TJSONValue;
 begin
   V := FindValue(Path);
-  if Assigned(V) and (V is TJSONObject) then
-    Result := V as TJSONObject
+  if Assigned(V) and (V is TJsonObject) then
+    Result := V as TJsonObject
   else
     Result := nil;
 end;
@@ -270,9 +277,9 @@ begin
   var
   LValue := ForceP(Path, Name, Index);
   if LValue <> nil then
-    if LValue.ClassType = TJSONObject then
+    if LValue.ClassType = TJsonObject then
     begin
-      TJSONObject(LValue).SetBoolean(Name, Value);
+      TJsonObject(LValue).SetBoolean(Name, Value);
     end
     else if LValue.ClassType = TJSONArray then
     begin
@@ -295,9 +302,9 @@ begin
   var
   LValue := ForceP(Path, Name, Index);
   if LValue <> nil then
-    if LValue.ClassType = TJSONObject then
+    if LValue.ClassType = TJsonObject then
     begin
-      TJSONObject(LValue).SetFloat(Name, Value);
+      TJsonObject(LValue).SetFloat(Name, Value);
     end
     else if LValue.ClassType = TJSONArray then
     begin
@@ -320,9 +327,9 @@ begin
   var
   LValue := ForceP(Path, Name, Index);
   if LValue <> nil then
-    if LValue.ClassType = TJSONObject then
+    if LValue.ClassType = TJsonObject then
     begin
-      TJSONObject(LValue).SetInt64(Name, Value);
+      TJsonObject(LValue).SetInt64(Name, Value);
     end
     else if LValue.ClassType = TJSONArray then
     begin
@@ -345,9 +352,9 @@ begin
   var
   LValue := ForceP(Path, Name, Index);
   if LValue <> nil then
-    if LValue.ClassType = TJSONObject then
+    if LValue.ClassType = TJsonObject then
     begin
-      TJSONObject(LValue).SetArray(Name, Value);
+      TJsonObject(LValue).SetArray(Name, Value);
     end
     else if LValue.ClassType = TJSONArray then
     begin
@@ -355,13 +362,13 @@ begin
     end;
 end;
 
-procedure TJSONObjectHelper.SetObject(const Key: string; const Value: TJSONObject);
+procedure TJSONObjectHelper.SetObject(const Key: string; const Value: TJsonObject);
 begin
   RemovePair(Key);
   AddPair(Key, Value);
 end;
 
-procedure TJSONObjectHelper.SetObjectP(const Path: string; const Value: TJSONObject);
+procedure TJSONObjectHelper.SetObjectP(const Path: string; const Value: TJsonObject);
 begin
   var
     Name: String;
@@ -370,9 +377,9 @@ begin
   var
   LValue := ForceP(Path, Name, Index);
   if LValue <> nil then
-    if LValue.ClassType = TJSONObject then
+    if LValue.ClassType = TJsonObject then
     begin
-      TJSONObject(LValue).SetObject(Name, Value);
+      TJsonObject(LValue).SetObject(Name, Value);
     end
     else if LValue.ClassType = TJSONArray then
     begin
@@ -395,9 +402,9 @@ begin
   var
   LValue := ForceP(Path, Name, Index);
   if LValue <> nil then
-    if LValue.ClassType = TJSONObject then
+    if LValue.ClassType = TJsonObject then
     begin
-      TJSONObject(LValue).SetString(Name, Value);
+      TJsonObject(LValue).SetString(Name, Value);
     end
     else if LValue.ClassType = TJSONArray then
     begin
@@ -505,6 +512,12 @@ end;
 
 { TJSONArrayHelper }
 
+procedure TJSONArrayHelper.Clear;
+begin
+  for var I := Count - 1 downto 0 do
+    Remove(I);
+end;
+
 procedure TJSONArrayHelper.SetArrayItem(const index: Integer; const NewValue: TJSONValue);
 begin
   with Self do
@@ -516,11 +529,47 @@ end;
 
 { TJSONPairHelper }
 
+function TJSONPairHelper.AsArr: TJSONArray;
+begin
+  if JsonValue is TJSONArray then
+    Result := JsonValue as TJSONArray
+  else
+    Result := nil;
+end;
+
+function TJSONPairHelper.AsBool: Boolean;
+begin
+  Result := JsonValue.GetValue<Boolean>();
+end;
+
+function TJSONPairHelper.AsFloat: Double;
+begin
+  Result := JsonValue.GetValue<Double>();
+end;
+
+function TJSONPairHelper.AsInt: Int64;
+begin
+  Result := JsonValue.GetValue<Int64>();
+end;
+
+function TJSONPairHelper.AsObj: TJsonObject;
+begin
+  if JsonValue is TJsonObject then
+    Result := JsonValue as TJsonObject
+  else
+    Result := nil;
+end;
+
+function TJSONPairHelper.AsStr: String;
+begin
+  Result := JsonValue.GetValue<String>();
+end;
+
 function TJSONPairHelper.GetCount: Integer;
 begin
-  if JsonValue.ClassType = TJSONObject then
+  if JsonValue.ClassType = TJsonObject then
   begin
-    Result := TJSONObject(JsonValue).Count;
+    Result := TJsonObject(JsonValue).Count;
   end
   else if JsonValue.ClassType = TJSONArray then
   begin
