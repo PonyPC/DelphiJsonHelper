@@ -13,6 +13,15 @@ type
     property I[const index: Integer]: TJSONValue write SetArrayItem;
   end;
 
+  TJSONPairHelper = class Helper for System.Json.TJSONPair
+  private
+    function GetName: String;
+    function GetCount: Integer;
+  public
+    property Name: String read GetName;
+    property Count: Integer read GetCount;
+  end;
+
   TJSONObjectHelper = class Helper for System.Json.TJSONObject
   private
     procedure SetBoolean(const Key: string; const Value: Boolean);
@@ -503,6 +512,29 @@ begin
     FElements.Items[Index].Free;
     FElements.Items[Index] := NewValue;
   end;
+end;
+
+{ TJSONPairHelper }
+
+function TJSONPairHelper.GetCount: Integer;
+begin
+  if JsonValue.ClassType = TJSONObject then
+  begin
+    Result := TJSONObject(JsonValue).Count;
+  end
+  else if JsonValue.ClassType = TJSONArray then
+  begin
+    Result := TJSONArray(JsonValue).Count;
+  end
+  else
+  begin
+    Result := 0;
+  end;
+end;
+
+function TJSONPairHelper.GetName: String;
+begin
+  Result := JsonString.Value;
 end;
 
 end.
